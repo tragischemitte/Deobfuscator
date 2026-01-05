@@ -2,6 +2,7 @@ package uwu.narumi.deobfuscator.core.other.impl.pool;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.OriginalSourceValue;
@@ -20,6 +21,22 @@ import java.util.Set;
  * Inlines constant static fields
  */
 public class InlineStaticFieldTransformer extends Transformer {
+  private final boolean assumeIntZeroWhenNoInit;
+
+  public InlineStaticFieldTransformer()
+  {
+    this(false);
+  }
+
+  /**
+   * Very unstable, don't use. Fixes zkm flow on small samples tho
+   * @param assumeIntZeroWhenNoInit Assumes that an integer field's value is 0 when it doesn't get explicitly set inside clinit
+   */
+  @Deprecated
+  public InlineStaticFieldTransformer(boolean assumeIntZeroWhenNoInit)
+  {
+    this.assumeIntZeroWhenNoInit = assumeIntZeroWhenNoInit;
+  }
 
   @Override
   protected void transform() throws Exception {
@@ -88,6 +105,20 @@ public class InlineStaticFieldTransformer extends Transformer {
                 staticConstantFields.remove(fieldRef);
               });
         }));
+
+    if (this.assumeIntZeroWhenNoInit)
+    {
+      this.scopedClasses().forEach(clazz -> {
+        clazz.fields().forEach(field -> {
+          final FieldRef fieldRef = FieldRef.of(clazz.classNode(), field);
+          if (!fieldRef.desc().equals("I")) return;
+          if (staticConstantFields.containsKey(fieldRef)) return;
+          if (notConstantFields.contains(fieldRef)) return;
+          staticConstantFields.put(fieldRef, new InsnNode(ICONST_0));
+          System.out.printf("%s.%s%s%n", fieldRef.owner(), fieldRef.name(), fieldRef.desc());
+        });
+      });
+    }
 
     // Replace static fields accesses with corresponding values
     Set<FieldRef> inlinedFields = new HashSet<>();

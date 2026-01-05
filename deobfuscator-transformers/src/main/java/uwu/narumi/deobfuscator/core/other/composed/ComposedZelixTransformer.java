@@ -40,7 +40,7 @@ public class ComposedZelixTransformer extends ComposedTransformer {
 
         // Decrypt longs
         () -> new ZelixLongEncryptionMPCTransformer(classInitializationOrder),
-        InlineStaticFieldTransformer::new,
+        () -> new InlineStaticFieldTransformer(experimental),
         UniversalNumberTransformer::new,
 
         // Cleanup
