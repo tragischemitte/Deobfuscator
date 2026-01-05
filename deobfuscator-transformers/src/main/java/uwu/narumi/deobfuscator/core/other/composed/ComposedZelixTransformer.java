@@ -17,20 +17,37 @@ import java.util.Map;
  * https://www.zelix.com/
  */
 // TODO: Work in progress...
-public class ComposedZelixTransformer extends ComposedTransformer {
-  public ComposedZelixTransformer() {
-    this(false);
+public class ComposedZelixTransformer extends ComposedTransformer
+{
+  public ComposedZelixTransformer()
+  {
+    this(false, false);
   }
 
-  public ComposedZelixTransformer(boolean experimental) {
-    this(experimental, new HashMap<>());
+  public ComposedZelixTransformer(final boolean experimental)
+  {
+    this(experimental, false, new HashMap<>());
   }
 
-  public ComposedZelixTransformer(boolean experimental, Map<String, String> classInitializationOrder) {
+  public ComposedZelixTransformer(final boolean experimental,
+                                  final boolean integerFix)
+  {
+    this(experimental, integerFix, new HashMap<>());
+  }
+
+  public ComposedZelixTransformer(final boolean experimental,
+                                  final Map<String, String> classInitializationOrder)
+  {
+    this(experimental, false, classInitializationOrder);
+  }
+
+  public ComposedZelixTransformer(final boolean experimental,
+                                  final boolean integerFix,
+                                  final Map<String, String> classInitializationOrder)
+  {
     super(
         // Initial cleanup
-        JsrInlinerTransformer::new,
-        RecoverSyntheticsTransformer::new,
+        JsrInlinerTransformer::new, RecoverSyntheticsTransformer::new,
 
         // Fixes flow a bit
         ZelixUselessTryCatchRemoverTransformer::new,
@@ -40,11 +57,10 @@ public class ComposedZelixTransformer extends ComposedTransformer {
 
         // Decrypt longs
         () -> new ZelixLongEncryptionMPCTransformer(classInitializationOrder),
-        () -> new InlineStaticFieldTransformer(experimental),
+        () -> new InlineStaticFieldTransformer(integerFix),
         UniversalNumberTransformer::new,
 
         // Cleanup
-        ComposedPeepholeCleanTransformer::new
-    );
+        ComposedPeepholeCleanTransformer::new);
   }
 }
